@@ -111,6 +111,12 @@
       ".tr-cart-name{font-family:var(--v2-poster,Impact,sans-serif);font-size:22px;letter-spacing:.03em;text-transform:uppercase;}",
       ".tr-cart-meta{display:flex;align-items:center;gap:16px;font-family:var(--v2-code,'Helvetica Neue',Arial,sans-serif);font-size:13px;letter-spacing:.14em;text-transform:uppercase;}",
       ".tr-cart-qty{font-weight:700;}",
+      ".tr-cart-stepper{display:inline-flex;align-items:center;gap:0;border:1.5px solid var(--v2p-ink,#14130f);}",
+      ".tr-cart-step{min-width:40px;min-height:40px;padding:0 10px;background:transparent;border:0;cursor:pointer;font:inherit;font-weight:700;letter-spacing:.08em;color:inherit;}",
+      ".tr-cart-step:hover{background:rgba(20,19,15,.06);}",
+      ".tr-cart-step:focus-visible{outline:2px solid var(--v2p-ink,#14130f);outline-offset:2px;}",
+      ".tr-cart-qty-input{width:3.2rem;min-height:40px;border:0;border-left:1.5px solid var(--v2p-ink,#14130f);border-right:1.5px solid var(--v2p-ink,#14130f);background:transparent;text-align:center;font:inherit;font-weight:700;letter-spacing:.08em;color:inherit;-moz-appearance:textfield;}",
+      ".tr-cart-qty-input::-webkit-outer-spin-button,.tr-cart-qty-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}",
       ".tr-cart-remove{background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px;letter-spacing:.14em;text-transform:uppercase;font:inherit;color:inherit;}",
       ".tr-cart-actions{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;margin-top:22px;}",
       ".tr-cart-clear,.tr-cart-checkout{min-height:48px;padding:0 22px;letter-spacing:.18em;text-transform:uppercase;font-family:var(--v2-code,'Helvetica Neue',Arial,sans-serif);font-size:13px;font-weight:700;cursor:pointer;}",
@@ -163,8 +169,20 @@
           escapeHtml(line.name) +
           "</span>" +
           '<span class="tr-cart-meta">' +
-          '<span class="tr-cart-qty">Qty ' +
+          '<span class="tr-cart-stepper" role="group" aria-label="Quantity for ' +
+          escapeHtml(line.name) +
+          '">' +
+          '<button type="button" class="tr-cart-step" data-qty-delta="-1" data-slug="' +
+          line.slug +
+          '" aria-label="Decrease quantity">−</button>' +
+          '<input class="tr-cart-qty-input" type="number" min="1" step="1" inputmode="numeric" value="' +
           line.qty +
+          '" data-slug="' +
+          line.slug +
+          '" aria-label="Quantity">' +
+          '<button type="button" class="tr-cart-step" data-qty-delta="1" data-slug="' +
+          line.slug +
+          '" aria-label="Increase quantity">+</button>' +
           "</span>" +
           '<button type="button" class="tr-cart-remove" data-remove="' +
           line.slug +
@@ -194,6 +212,40 @@
         removeItem(btn.getAttribute("data-remove"));
         renderCartPage();
         updateNavCounts();
+      });
+    });
+    main.querySelectorAll("[data-qty-delta]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var slug = btn.getAttribute("data-slug");
+        var delta = parseInt(btn.getAttribute("data-qty-delta"), 10) || 0;
+        var items = readCart();
+        var cur = 0;
+        for (var i = 0; i < items.length; i++) {
+          if (items[i].slug === slug) {
+            cur = items[i].qty;
+            break;
+          }
+        }
+        setQty(slug, cur + delta);
+        renderCartPage();
+        updateNavCounts();
+      });
+    });
+    main.querySelectorAll(".tr-cart-qty-input").forEach(function (input) {
+      function apply() {
+        var slug = input.getAttribute("data-slug");
+        var n = parseInt(input.value, 10);
+        if (!isFinite(n) || n < 1) n = 1;
+        setQty(slug, n);
+        renderCartPage();
+        updateNavCounts();
+      }
+      input.addEventListener("change", apply);
+      input.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          apply();
+        }
       });
     });
     var clearBtn = main.querySelector(".tr-cart-clear");
